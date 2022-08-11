@@ -3,20 +3,30 @@ import UserNotFoundException from '../exceptions/UserNotFoundException';
 import HttpException from '../exceptions/HttpException';
 import User from '../interfaces/user.interface';
 import _userModel from '../models/users.model';
+import CreateUserDTO from '../DTO/user.dto';
+import validationMiddleware from '../middleware/validation.middleware';
 class UsersController {
   public path = '/users';
   public router = express.Router();
   private userModel = _userModel;
 
   constructor() {
-    this.intializeRoutes();
+    this.initializeRoutes();
   }
-  private intializeRoutes() {
+  private initializeRoutes() {
     this.router.get(this.path, this.getAllUsers);
     this.router.get(`${this.path}/:id`, this.getUserById);
-    this.router.patch(`${this.path}/:id`, this.modifyUser);
+    this.router.patch(
+      `${this.path}/:id`,
+      validationMiddleware(CreateUserDTO, true),
+      this.modifyUser
+    );
     this.router.delete(`${this.path}/:id`, this.deleteUser);
-    this.router.post(this.path, this.createUser);
+    this.router.post(
+      this.path,
+      validationMiddleware(CreateUserDTO),
+      this.createUser
+    );
   }
   private getUserById = (
     request: express.Request,
