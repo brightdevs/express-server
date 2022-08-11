@@ -7,6 +7,12 @@ import userModel from '../models/users.model';
 import LogInDTO from '../DTO/login.dto';
 import Controller from '../interfaces/controller.interface';
 import validationMiddleware from '../middleware/validation.middleware';
+import User from '../interfaces/user.interface';
+import DataStoredInToken from '../interfaces/dataStoredInToken.interface';
+import TokenData from '../interfaces/token.interface';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
 
 class AuthenticationController implements Controller {
   public path = '/auth';
@@ -41,6 +47,8 @@ class AuthenticationController implements Controller {
         ...userData,
         password: hashedPassword,
       });
+      const tokenData = this.createToken(user);
+      response.setHeader('Set-Cookie', [this.createCookie(tokenData)]);
       response.send({
         name: user.name,
         email: user.email,
@@ -68,6 +76,20 @@ class AuthenticationController implements Controller {
       next(new WrongCredentialsException());
     }
   };
+  private createToken(user: User): TokenData {
+    const expiresIn = 60 * 60;
+    const secret = process.env.JWT_SECRET as string;
+    const dataStoredInToke: DataStoredInToken = {
+      _id: user._id!,
+    };
+    return {
+      expiresIn,
+      token: jwt.sign(dataStoredInToke, secret, { expiresIn }),
+    };
+  }
+  private createCookie(tokenData: TokenData) {
+    return `Authorization=${tokenData.token}; HttpOnly; Max-Age=${tokenData.expiresIn}`;
+  }
 }
 
 export default AuthenticationController;
