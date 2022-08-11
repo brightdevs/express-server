@@ -1,4 +1,6 @@
 import express from 'express';
+import UserNotFoundException from '../exceptions/UserNotFoundException';
+import HttpException from '../exceptions/HttpException';
 import User from '../interfaces/user.interface';
 import _userModel from '../models/users.model';
 class UsersController {
@@ -18,14 +20,19 @@ class UsersController {
   }
   private getUserById = (
     request: express.Request,
-    response: express.Response
+    response: express.Response,
+    next: express.NextFunction
   ) => {
     const id = request.params.id;
 
     this.userModel
       .findById(id)
       .then((user) => {
-        response.status(200).json(user);
+        if (user) {
+          response.status(200).json(user);
+        } else {
+          next(new UserNotFoundException(id));
+        }
       })
       .catch((err) => {
         response.status(400).json({
@@ -35,7 +42,8 @@ class UsersController {
   };
   private modifyUser = (
     request: express.Request,
-    response: express.Response
+    response: express.Response,
+    next: express.NextFunction
   ) => {
     const id = request.params.id;
     const user: User = request.body;
@@ -43,7 +51,11 @@ class UsersController {
     this.userModel
       .findByIdAndUpdate(id, user, { new: true })
       .then((user) => {
-        response.status(200).json(user);
+        if (user) {
+          response.status(200).json(user);
+        } else {
+          next(new UserNotFoundException(id));
+        }
       })
       .catch((err) => {
         response.status(400).json({
@@ -54,7 +66,8 @@ class UsersController {
 
   private deleteUser = (
     request: express.Request,
-    response: express.Response
+    response: express.Response,
+    next: express.NextFunction
   ) => {
     const id = request.params.id;
 
@@ -62,29 +75,39 @@ class UsersController {
       if (successResponse) {
         response.sendStatus(200);
       } else {
-        response.sendStatus(404);
+        next(new UserNotFoundException(id));
       }
     });
   };
 
   private getAllUsers = (
     request: express.Request,
-    response: express.Response
+    response: express.Response,
+    next: express.NextFunction
   ) => {
     this.userModel.find().then((users) => {
-      response.json(users);
+      if (users) {
+        response.json(users);
+      } else {
+        next(new HttpException(400, 'No data available!'));
+      }
     });
   };
   private createUser = (
     request: express.Request,
-    response: express.Response
+    response: express.Response,
+    next: express.NextFunction
   ) => {
     const newUser: User = request.body;
     const createdUser = new this.userModel(newUser);
     createdUser
       .save()
       .then((user) => {
-        response.json(user);
+        if (user) {
+          response.json(user);
+        } else {
+          next(new HttpException(400, 'User not created!'));
+        }
       })
       .catch((err) => {
         response.json(err);
