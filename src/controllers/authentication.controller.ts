@@ -39,6 +39,7 @@ class AuthenticationController implements Controller {
     next: express.NextFunction
   ) => {
     const userData: CreateUserDTO = request.body;
+
     if (await this.user.findOne({ email: userData.email })) {
       next(new UserWithThatEmailAlreadyExistsException(userData.email));
     } else {
@@ -68,7 +69,10 @@ class AuthenticationController implements Controller {
         user.password
       );
       if (isPasswordMatching) {
-        response.send(user);
+        response.send({
+          email: user.email,
+          name: user.name,
+        });
       } else {
         next(new WrongCredentialsException());
       }
