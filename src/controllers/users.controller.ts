@@ -5,6 +5,7 @@ import User from '../interfaces/user.interface';
 import _userModel from '../models/users.model';
 import CreateUserDTO from '../DTO/user.dto';
 import validationMiddleware from '../middleware/validation.middleware';
+import authMiddleware from '../middleware/auth.middleWare';
 class UsersController {
   public path = '/users';
   public router = express.Router();
@@ -14,19 +15,17 @@ class UsersController {
     this.initializeRoutes();
   }
   private initializeRoutes() {
-    this.router.get(this.path, this.getAllUsers);
-    this.router.get(`${this.path}/:id`, this.getUserById);
-    this.router.patch(
-      `${this.path}/:id`,
-      validationMiddleware(CreateUserDTO, true),
-      this.modifyUser
-    );
-    this.router.delete(`${this.path}/:id`, this.deleteUser);
-    this.router.post(
-      this.path,
-      validationMiddleware(CreateUserDTO),
-      this.createUser
-    );
+    this.router
+      .all(`${this.path}/*`, authMiddleware)
+      .get(this.path, this.getAllUsers)
+      .get(`${this.path}/:id`, this.getUserById)
+      .patch(
+        `${this.path}/:id`,
+        validationMiddleware(CreateUserDTO, true),
+        this.modifyUser
+      )
+      .delete(`${this.path}/:id`, this.deleteUser)
+      .post(this.path, validationMiddleware(CreateUserDTO), this.createUser);
   }
   private getUserById = (
     request: express.Request,
